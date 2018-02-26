@@ -68,11 +68,12 @@ I can almost guarantee that either OutGauge is disabled, or the wrong IP/port is
 
 ### The gauges lag/stutter, how can I fix this?
 
-If you're running the program on a different computer, particularly over WiFi, this is not unusual. If you can connect with a wired connection, you will almost certainly have a better experience. 
+If you're running the program on a different computer, particularly over WiFi, this is not unusual. If you can connect with a wired connection, you will almost certainly have a better experience. This happens because OutGauge is a UDP-based system and packets do sometimes get lost or delayed. **I can't fix this**
+
 *Don't forget to update the IP in the game if you change connections!*
 
 ----------
 
 ### My car has more than 8 total gears, but I still only see 8!
 
-This is a limitation of OutGauge, it uses a single byte to represent gear, with only one 1 at a time. Because it has only 8 bits, only 8 gears can be represented, anything higher than F6 or lower than R1 will be represented by the highest/lowest light, as appropriate. **I can't fix this.**
+This is a limitation of OutGauge, it uses a single byte to represent gear, with only one 1 at a time. Because it has only 8 bits, only 8 gears can be represented, anything higher than F6 or lower than R1 will be represented by the highest/lowest light, as appropriate. **Again, I can't fix this**
