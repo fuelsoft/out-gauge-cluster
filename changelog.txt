@@ -1,4 +1,8 @@
 -- NEW --
+-Added details to readme
+-Reverted default values for RPM and speed to D15 base
+
+-- 724e9db7d4f6d0cb789d2818aef19b4813f3eef3 --
 -Added a few more lights - ABS, TCS & e-brake
 -Added boost gauge thanks to v0.18 finally supporting it
 -Moved turn signal indicators up to a more natural position

@@ -43,17 +43,37 @@ Alright, great. Open Processing and open the .pde file. You now have two options
  6. Fuel Remaining
  7. Fuel Consumption
  8. Boost Pressure
- 9. Parking Brake/Emergency Brake/Handbrake
+ 9. Parking Brake/Emergency Brake/Hand Brake
  10. Anti-lock Brake Activity
  11. Traction/Stability Control Activity
- 12. Highbeam
+ 12. High-beam
  13. Turn Signals
+
+----------
+
+### Could I get some extra details about those gauges?
+#### Sure.
+ 1. A *tachometer* displays engine RPM. The large marks denote 1000 RPM increments and the small marks are every 100 RPM.
+ 2. The *speedometer* displays vehicle wheel speed. It is presented in KM/H. The large marks denote 10 KM/H increments and the small marks are every 1 KM/H.
+ 3. The *coolant temperature* is the temperature of the engine's coolant in degrees Celsius.
+ 4. The *oil temperature* is the temperature of the engine's oil in degrees Celsius.
+ 5. The *gear* is the transmission's current gear. If the gear is higher than F6 or lower than R1, this will display the highest or lowest value possible respectively.
+ 6. The *fuel remaining* is the percentage of fuel remaining in the tank.
+ 7. The *fuel consumption* is a somewhat arbitrary but consistent use metric. It's based on the rate of depletion of fuel. It does not account for tank size, speed, engine load or anything else.
+ 8. The *boost pressure* is the air pressure coming out of the turbo, if one is equipped. The default 9 o'clock position is 0 PSI, 12 o'clock is 14.5 PSI (1 BAR), 3 o'clock is 29 PSI (2 BAR), etc. This can be negative at low RPMs as the turbo *actually obstructs airflow*, which is accounted for at the same rate as positive pressure (0.322 PSI/DEGREE).
+ 9. The *parking brake* or *emergency brake* or *hand brake* is the secondary brake that can lock up most vehicle's rear wheels. This light indicates braking force is being applied using this brake.
+ 10. The *anti-lock braking system* will automatically feather the brakes under extreme conditions such as low grip braking or very hard braking to avoid wheel lockup. This light indicates the system is taking action to avoid lockup.
+ 11. The *traction control* or *stability control* systems use a combination of power reduction and individual-wheel-braking to try to keep a vehicle facing forward and under control. This light indicates one or more system is currently taking action to keep the vehicle under control.
+ 12. *High-beams* are bright headlights that point higher than standard headlights to illuminate a greater area ahead. Typically used on unlit roads, it's important that they have a dashboard warning as they are prone to blinding oncoming traffic.
+ 13. *Turn signals* indicate intention to move laterally (turning, changing lane, parking, etc.). These will also both blink together if you have your hazard lights on.
+
+## Questions:
 
 ----------
 
 ### The tachometer and speedometer aren't set up properly and go off the top end/will never reach the top end.
 
-This is a problem with the half-assed implementation of OutGauge in BeamNG.drive. Among other issues, the game does not properly report vehicle IDs, so the program has no way of knowing what vehicle is being used. Because of this, it can only know some things, like default details about fuel and temperatures. Anything else must be hard-coded, including max RPM and max speed. 
+This is a problem both with the implementation of OutGauge in BeamNG.drive and with OutGauge itself. Among other issues, the game does not properly report vehicle IDs, so the program has no way of knowing what vehicle is being used. For it's part, OutGauge does not provide a way to express engine/vehicle details. Because of this, the program can only know some things, like default details about fuel and temperatures. Anything else must be hard-coded, including max RPM and max speed.
 
 These are located near the top of the file and are very easy to change:
 
@@ -62,7 +82,7 @@ These are located near the top of the file and are very easy to change:
 
 The defaults are for the base model D15.
 
-*Devs: Please fix this. It would let me add a single file with a list of known cars that would allow the program to be built and not require changing hardcoded values.*
+*TODO: Add a configuration system.*
 
 ----------
 

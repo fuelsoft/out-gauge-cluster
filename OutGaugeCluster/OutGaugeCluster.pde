@@ -40,8 +40,8 @@ float[] consumption = new float[30];
 float aggregatedCons = 0f;
 
 /*CHANGE THESE*/
-final int MAX_RPM = 7500;
-final int MAX_SPEED = 220; //in km/h
+final int MAX_RPM = 5800;
+final int MAX_SPEED = 190; //in km/h
 
 void setup() {
   size(1280, 640);
