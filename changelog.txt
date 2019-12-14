@@ -1,0 +1,17 @@
+-- NEW --
+-Added a few more lights - ABS, TCS & e-brake
+-Added boost gauge thanks to v0.18 finally supporting it
+-Moved turn signal indicators up to a more natural position
+
+-- [uncommited, rolled into the next commit - late 2018/early 2019] --
+-Fixed coolant temp - BeamNG must have fixed this field at some point, it's now a degree reading instead of a percentage.
+-Added fuel consumption bar below fuel level bar.
+
+-- ba3a1e8302581188ed32c3d21290311b941c8649 --
+-Tweaked readme
+
+-- 42fce6c776d0af565590dd7b13b4c33c27986f88 --
+-Added readme, project file
+
+-- 8d94504bf64187d879c2212a0022cc18824bc331 --
+-Initial commit

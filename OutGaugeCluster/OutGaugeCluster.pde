@@ -3,33 +3,48 @@ import java.net.*;
 import java.util.*;
 import java.nio.*;
 
-float cx, cy, lcx, rcx;
+float cx, cy, lcx, rcx, by;
 float dy;
+int radius;
 float radiusone;
 float radiustwo;
 float radiusthree;
 float fuelRadius;
-
-float rpm = 0;
-float fuel = 1;
-float engTemp = 0;
-int prevTime = 0;
-float speed = 0;
-int showlights = 0;
-float oilTemp = 0;
-int gear = 1;
-
-float acc = 0;
-
 PShape signal;
+PImage im_tcs, im_abs, im_highbeam, im_parking;
+
+//natural data
+int time;
+char car[] = new char[4];
+int gear;
+float speed;
+float rpm;
+float boost;
+float engTemp;
+float fuel;
+float oilPress;
+float oilTemp;
+int dashlights;
+int showlights;
+float throttle;
+float brake;
+float clutch;
+
+int prevTime = 0;
+
+//derived data
+float expectedSpeed = 0;
+float[] accel = new float[12];
+float aggregatedAccel = 0f;
+float[] consumption = new float[30];
+float aggregatedCons = 0f;
 
 /*CHANGE THESE*/
-final int MAX_RPM = 5800;
-final int MAX_SPEED = 190; //in km/h
+final int MAX_RPM = 7500;
+final int MAX_SPEED = 220; //in km/h
 
 void setup() {
   size(1280, 640);
-  
   try {
     thread("getPacket");
   } catch (Exception e) {
@@ -39,14 +54,19 @@ void setup() {
   
   signal = createShape();
   signal.beginShape(TRIANGLE_STRIP);
-  signal.fill(63, 200, 255);
+  signal.fill(32, 157, 41);
   signal.noStroke();
   signal.vertex(0, 4);
   signal.vertex(2, 2);
   signal.vertex(0, 0);
   signal.endShape(CLOSE);
+  
+  im_tcs = loadImage("assets/tcs.png");
+  im_abs = loadImage("assets/abs.png");
+  im_highbeam = loadImage("assets/high-beam.png");
+  im_parking = loadImage("assets/parking.png");
 
-  int radius = min(width, height) / 2;
+  radius = min(width, height) / 2;
   radiusthree = radius * 0.72;
   radiusone = radius * 0.68;
   fuelRadius = radius * 0.15;
@@ -57,11 +77,20 @@ void setup() {
   lcx = cx / 2;
   rcx = lcx + cx;
   dy = cy*1.6;
+  by = cy / 2;
 }
 
 void draw() {  
   
   background(0);
+  
+  accel = shift(accel);
+  accel[accel.length - 1] = speed;
+  aggregatedAccel = aggregate(accel)/accel.length;
+  
+  consumption = shift(consumption);
+  consumption[consumption.length - 1] = fuel;
+  aggregatedCons = 10000*aggregate(consumption)/consumption.length;
   
   /*VERTICAL INDICATOR START*/ //center
   for (float a = 0; a < 160; a += 20) {
@@ -75,7 +104,6 @@ void draw() {
       }
       strokeWeight(3);
       widthOffset = 15;
-      
     }
     else {
       strokeWeight(2);
@@ -87,7 +115,7 @@ void draw() {
   
   /*SMALL GAUGE START*/ //left
   //eng temp colour
-  if (engTemp > 0.8) { //temp warn colour
+  if (engTemp > 115) { //temp warn colour
     stroke(255, 0, 0);
   }
   else {
@@ -96,7 +124,10 @@ void draw() {
   
   //eng temp needle
   strokeWeight(2);
-  line(lcx, dy, lcx + cos(engTemp*PI + PI) * radiusone/5, dy + sin(engTemp*PI + PI) * radiusone/5);
+  float et = map(engTemp, 60, 130, 0, 1);
+  if (et < 0) et = 0;
+  else if (et > 1) et = 1;
+  line(lcx, dy, lcx + cos(et*PI + PI) * radiusone/5, dy + sin(et*PI + PI) * radiusone/5);
   
   //eng temp markers
   for (float a = 180; a <= 360; a += (45f/2f)) {
@@ -106,7 +137,6 @@ void draw() {
     float vx = lcx + cos(angle) * (fuelRadius+5);
     float vy = dy + sin(angle) * (fuelRadius+5);
     line(x, y, vx, vy);
-    //vertex(x, y);
   }
 
   //eng temp knob
@@ -115,38 +145,8 @@ void draw() {
   ellipse(lcx, dy, 15, 15);
   /*SMALL GAUGE END*/
   
-  ///*SMALL GAUGE START*/ //center
-  ////acc colour
-  //if (acc > 1) { //temp warn colour
-  //  stroke(255, 0, 0);
-  //}
-  //else {
-  //   stroke(63, 200, 255);
-  //}
-  
-  ////acc needle
-  //float scalar = (1/2f);
-  //strokeWeight(2);
-  //line(cx, dy, cx + cos(acc * PI * (scalar) + 3*PI/2) * radiusone/5, dy + sin(acc * PI * (scalar) + 3*PI/2) * radiusone/5);
-  
-  ////acc markers
-  //for (float a = 180; a <= 360; a += (45f/2f)) {
-  //  float angle = radians(a);
-  //  float x = cx + cos(angle) * fuelRadius;
-  //  float y = dy + sin(angle) * fuelRadius;
-  //  float vx = cx + cos(angle) * (fuelRadius+5);
-  //  float vy = dy + sin(angle) * (fuelRadius+5);
-  //  line(x, y, vx, vy);
-  //}
-
-  ////acc knob
-  //fill(40);
-  //noStroke();
-  //ellipse(cx, dy, 15, 15);
-  ///*SMALL GAUGE END*/
-  
   /*SMALL GAUGE START*/ //right
-  //eng temp colour
+  //oil temp colour
   if (oilTemp > 140) { //temp warn colour
     stroke(255, 0, 0);
   }
@@ -169,13 +169,45 @@ void draw() {
     float vx = rcx + cos(angle) * (fuelRadius+5);
     float vy = dy + sin(angle) * (fuelRadius+5);
     line(x, y, vx, vy);
-    //vertex(x, y);
   }
 
   //oil temp knob
   fill(40);
   noStroke();
   ellipse(rcx, dy, 15, 15);
+  /*SMALL GAUGE END*/
+  
+  /*SMALL GAUGE START*/ //centre
+  //boost pressure colour
+  if (boost > 2) { //high boost colour
+     stroke(255, 0, 0);
+  }
+  else if (boost < 0) { //vacuum
+     stroke(255, 0, 0); 
+  }
+  else {
+     stroke(63, 200, 255);
+  }
+  
+  //boost pressure needle
+  strokeWeight(2);
+  float bp = map(boost, 0, 2.06, 0, 1); //boost is in bar
+  line(cx, by, cx + cos(bp*PI + PI) * radiusone/3, by + sin(bp*PI + PI) * radiusone/3);
+  
+  //oil temp markers
+  for (float a = 135; a <= 405; a += (45f/4f)) {
+    float angle = radians(a);
+    float x = cx + cos(angle) * ((radiusone/3)+5);
+    float y = by + sin(angle) * ((radiusone/3)+5);
+    float vx = cx + cos(angle) * ((radiusone/3)+12);
+    float vy = by + sin(angle) * ((radiusone/3)+12);
+    line(x, y, vx, vy);
+  }
+
+  //boost knob
+  fill(40);
+  noStroke();
+  ellipse(cx, by, 20, 20);
   /*SMALL GAUGE END*/
   
   /*LARGE GAUGE START*/ //left
@@ -191,10 +223,8 @@ void draw() {
   else {
     stroke(255, 0, 0);
   }
-  strokeWeight(5);
-  line(lcx, cy, lcx + cos(radians(m)) * radiusone, cy + sin(radians(m)) * radiusone); //needle
   
-  //tach macro marks
+  //tach micro marks
   strokeWeight(1);
   for (float a = 120; a <= 420; a += 300f/(MAX_RPM/100f)) {
     float angle = radians(a);
@@ -205,7 +235,7 @@ void draw() {
     line(x, y, vx, vy);
   }
   
-  //tach micro marks
+  //tach macro marks
   strokeWeight(2);
   for (float a = 120; a <= 420; a += 300f/(MAX_RPM/1000f)) {
     float angle = radians(a);
@@ -220,6 +250,9 @@ void draw() {
   strokeWeight(5);
   line(lcx + cos(radians(420)) * radiusthree, cy + sin(radians(420)) * radiusthree, lcx + cos(radians(420)) * (radiusthree+25), cy + sin(radians(420)) * (radiusthree+25));
   line(lcx + cos(radians(120)) * radiusthree, cy + sin(radians(120)) * radiusthree, lcx + cos(radians(120)) * (radiusthree+25), cy + sin(radians(120)) * (radiusthree+25));
+  
+  strokeWeight(5);
+  line(lcx, cy, lcx + cos(radians(m)) * radiusone, cy + sin(radians(m)) * radiusone); //needle
 
   //tach knob
   fill(40);
@@ -232,8 +265,6 @@ void draw() {
   
   //speedo colour
   stroke(63, 200, 255);
-  strokeWeight(5);
-  line(rcx, cy, rcx + cos(radians(p)) * radiusone, cy + sin(radians(p)) * radiusone); //needle
   
   //speedo macro marks
   strokeWeight(1);
@@ -256,6 +287,9 @@ void draw() {
     float vy = cy + sin(angle) * (radiusthree+20);
     line(x, y, vx, vy);
   }
+  
+  strokeWeight(5);
+  line(rcx, cy, rcx + cos(radians(p)) * radiusone, cy + sin(radians(p)) * radiusone); //needle
   
   //speedo top and bottom markers
   strokeWeight(5);
@@ -280,20 +314,62 @@ void draw() {
     else { //fuel OK colour
        stroke(63, 200, 255);
     }
-    line(cx - 160, cy*1.85, (cx - 160)+(320*fuel), cy*1.85);
+    line((cx - 160), cy*1.85, (cx - 160)+(320*fuel), cy*1.85);
+  }
+  /*BAR GAUGE END*/
+  
+  /*BAR GAUGE START*/
+  //consumption bar
+  strokeWeight(8);
+  stroke(40);
+  line(cx - 160, cy*1.9, cx + 160, cy*1.9);
+  if (aggregatedCons > 0) { //consume
+    stroke(63, 200, 255);
+    line((cx - 160), cy*1.9, (cx - 160)+(640*aggregatedCons), cy*1.9);
+  }
+  else { //refill (or recharge on electric vehicles)
+    stroke(0, 255, 0);
+    line((cx - 160), cy*1.9, (cx - 160), cy*1.9);
   }
   /*BAR GAUGE END*/
   
   /*SIGNAL START*/
+  int offset = 32;
   //turn signals
   if((showlights & 0x0040) != 0) {
-  shape(signal, cx+10, dy*1.055, 25, 25); // ->
+    shape(signal, cx + 110, by/2, 35, 35); // ->
   }
   if((showlights & 0x0020) != 0) {
-  shape(signal, cx-10, dy*1.055, -25, 25); // <-
+    shape(signal, cx - 110, by/2, -35, 35); // <-
+  }
+  if ((showlights & 0x0002) != 0) { // highbeams
+    image(im_highbeam, cx - offset, dy + 40 - offset);
+  }
+  if ((showlights & 0x0010) != 0) { // traction control
+    image(im_tcs, cx + 75 - offset, dy - 20 - offset);
+  }
+  if ((showlights & 0x0400) != 0) { // antilock breaks
+    image(im_abs, cx - 75 - offset, dy - 20 - offset);
+  }
+  if ((showlights & 0x0004) != 0) { // handbreak breaks
+    image(im_parking, cx - offset, dy - 20 - offset);
   }
   /*SIGNAL END*/
-  
+}
+
+float[] shift(float[] arr) {
+  for (int i = 0; i < arr.length-1; i++) {
+    arr[i] = arr[i+1];
+  }
+  return arr;
+}
+
+float aggregate(float[] arr) {
+  float a = 0;
+   for (int i = 0; i < arr.length-1; i++) {
+      a += (arr[i] - arr[i+1]);
+   }
+   return a;
 }
 
 void getPacket() throws IOException{
@@ -304,12 +380,17 @@ void getPacket() throws IOException{
   while (true) {
     socket.receive(packet);
     byte[] data = packet.getData();
-    rpm = ByteBuffer.wrap(new byte[]{data[16], data[17], data[18], data[19]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-    speed = ByteBuffer.wrap(new byte[]{data[12], data[13], data[14], data[15]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-    fuel = ByteBuffer.wrap(new byte[]{data[28], data[29], data[30], data[31]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-    engTemp = ByteBuffer.wrap(new byte[]{data[24], data[25], data[26], data[27]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-    showlights = ByteBuffer.wrap(new byte[]{data[44], data[45], data[46], data[47]}).order(ByteOrder.LITTLE_ENDIAN).getInt();
-    oilTemp = ByteBuffer.wrap(new byte[]{data[36], data[37], data[38], data[39]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+
+    for (int i = 0; i < 4; i++) car[i] = (char) data[4 + i];
     gear = (0xFF & data[10]);
+    speed = ByteBuffer.wrap(new byte[]{data[12], data[13], data[14], data[15]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+    rpm = ByteBuffer.wrap(new byte[]{data[16], data[17], data[18], data[19]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+    boost = ByteBuffer.wrap(new byte[]{data[20], data[21], data[22], data[23]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+    engTemp = ByteBuffer.wrap(new byte[]{data[24], data[25], data[26], data[27]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+    fuel = ByteBuffer.wrap(new byte[]{data[28], data[29], data[30], data[31]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+    oilPress = ByteBuffer.wrap(new byte[]{data[32], data[33], data[34], data[35]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+    oilTemp = ByteBuffer.wrap(new byte[]{data[36], data[37], data[38], data[39]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+    showlights = ByteBuffer.wrap(new byte[]{data[44], data[45], data[46], data[47]}).order(ByteOrder.LITTLE_ENDIAN).getInt();
+    //clutch = ByteBuffer.wrap(new byte[]{data[64], data[65], data[66], data[67]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
   }
 }

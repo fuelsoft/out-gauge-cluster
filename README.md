@@ -13,11 +13,11 @@ Open BeamNG.drive and start a map (free mode is a good choice as the game won't 
 
 ## What is OutGauge?
 
-OutGauge is a vehicle-simulator-focused protocol that was developed for the game [Live For Speed](https://www.lfs.net/). The [BeamNG](https://beamng.com/) team has implemented it in their game as well, and that is what this project targets. The protocol is the same, and this virtual dash should work with LFS as well, but it remains untested and unsupported officially.
+OutGauge is a vehicle-simulator-focused packet specification that was developed for the game [Live For Speed](https://www.lfs.net/). The [BeamNG](https://beamng.com/) team has implemented it in their game as well, and that is what this project targets. The data is the same, and this virtual dash should work with LFS as well, but it remains untested and unsupported officially.
 
 ## What is Processing? All I have is a .pde file and I can't run that
 
-A Java-based, visual-focused program/language. You will need Java to run it and any programs you create.
+A Java-based, graphically-focused program/language. You will need Java to run it and any programs you create.
 See [here](https://processing.org/) for details and to download the IDE needed to write and build programs.
 
 ### I don't need to write anything, I just want to run this!
@@ -33,15 +33,21 @@ Alright, great. Open Processing and open the .pde file. You now have two options
 ## General
 
 ### What are all these gauges?
-![The cluster](https://i.imgur.com/AuxGAij.png)
+<img src="/assets/cluster.png">
 
- 1. Tachometer - Tracks engine RPM
- 2. Speedometer - Vehicle speed
- 3. Engine (coolant) temperature
- 4. Engine (oil) temperature
- 5. Transmission gear - Green is neutral, below is reverse, above is forward
- 6. Fuel - Bar will drain with driving
- 7. [Unmarked] Turn signals
+ 1. Tachometer
+ 2. Speedometer
+ 3. Temperature - Coolant
+ 4. Temperature - Oil
+ 5. Transmission Gear
+ 6. Fuel Remaining
+ 7. Fuel Consumption
+ 8. Boost Pressure
+ 9. Parking Brake/Emergency Brake/Handbrake
+ 10. Anti-lock Brake Activity
+ 11. Traction/Stability Control Activity
+ 12. Highbeam
+ 13. Turn Signals
 
 ----------
 
@@ -64,11 +70,13 @@ The defaults are for the base model D15.
 
 I can almost guarantee that either OutGauge is disabled, or the wrong IP/port is set. Please double-check that you have set them right. See "**How do I use it?**" above for more info.
 
+Also check that you don't have a firewall blocking incoming connections.
+
 ----------
 
 ### The gauges lag/stutter, how can I fix this?
 
-If you're running the program on a different computer, particularly over WiFi, this is not unusual. If you can connect with a wired connection, you will almost certainly have a better experience. This happens because OutGauge is a UDP-based system and packets do sometimes get lost or delayed. **I can't fix this**
+If you're running the program on a different computer, particularly over WiFi, this is not unusual. If you can connect with a wired connection, you will almost certainly have a better experience. This happens because OutGauge is a UDP-based system and packets do sometimes get lost or delayed. **I can't fix this.**
 
 *Don't forget to update the IP in the game if you change connections!*
 
@@ -76,4 +84,4 @@ If you're running the program on a different computer, particularly over WiFi, t
 
 ### My car has more than 8 total gears, but I still only see 8!
 
-This is a limitation of OutGauge, it uses a single byte to represent gear, with only one 1 at a time. Because it has only 8 bits, only 8 gears can be represented, anything higher than F6 or lower than R1 will be represented by the highest/lowest light, as appropriate. **Again, I can't fix this**
+This is a limitation of OutGauge, it uses a single byte to represent gear, with only one 1 at a time. Because it has only 8 bits, only 8 gears can be represented, anything higher than F6 or lower than R1 will be represented by the highest/lowest light, as appropriate. **Again, I can't fix this.**
