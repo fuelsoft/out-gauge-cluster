@@ -1,4 +1,17 @@
 -- NEW --
+-Added sliders to adjust tach, speedo, boost and fuel numbers - no more rebuilding required!
+-Using new fuel data, efficiency can be calculated.
+	-Added range
+	-Added litres per hour
+	-Added litres per 100 KM
+-Added oil warning.
+-Added battery warning.
+-Resized warning lights to 80% of previous size.
+
+-- 66e33b249550f047c716fbdb53379092d0ec668f --
+-Added new dashboard icons and cleaned up existing assets
+
+-- 4043b99616a2cd6b19af97b3a628c1b32882531d --
 -Added details to readme
 -Reverted default values for RPM and speed to D15 base
 

@@ -22,13 +22,21 @@ See [here](https://processing.org/) for details and to download the IDE needed t
 
 ### I don't need to write anything, I just want to run this!
 
-Alright, great. Open Processing and open the .pde file. You now have two options:
+Alright, great. Open Processing and open the .pde file. 
+
+This project requires ControlP5:
+
+ 1. Sketch > Import Library > Add Library
+ 2. Type *ControlP5* in the search box, select ControlP5 and click *install*.
+ 3. Once it's done installing, you can close the package manager window.
+
+You now have two options:
 
  1. Run the program once, using the play button at the top of the editor.
- 2. Create an executable. (This is not recommended for this particular project as RPM and speed numbers are hard-coded and cannot be changed after building)
+ 2. Create an executable.
 	 - File > Export Application (CTRL + SHIFT + E)
 	 - Choose any platform you want to export to. Note that OS X output is only available on a Mac.
-	 - Embed Java if you expect that your target machine will not have it installed
+	 - Embed Java if you expect that your target machine will not have it installed.
 
 ## General
 
@@ -73,16 +81,15 @@ Alright, great. Open Processing and open the .pde file. You now have two options
 
 ### The tachometer and speedometer aren't set up properly and go off the top end/will never reach the top end.
 
-This is a problem both with the implementation of OutGauge in BeamNG.drive and with OutGauge itself. Among other issues, the game does not properly report vehicle IDs, so the program has no way of knowing what vehicle is being used. For it's part, OutGauge does not provide a way to express engine/vehicle details. Because of this, the program can only know some things, like default details about fuel and temperatures. Anything else must be hard-coded, including max RPM and max speed.
+This is a problem both with the implementation of OutGauge in BeamNG.drive and with OutGauge itself. Among other issues, the game does not properly report vehicle IDs, so the program has no way of knowing what vehicle is being used. For it's part, OutGauge also does not provide a way to express engine/vehicle details like maximum values. Because of this, the program can only know some things, like default details about fuel and temperatures. Anything else must be manually adjusted, including max RPM and max speed.
 
-These are located near the top of the file and are very easy to change:
+Good news though! There's now an easy way to change these values without rebuilding the program every time!
 
-    [27] final int MAX_RPM = 5800;
-    [28] final int MAX_SPEED = 190; //in km/h
+Upon launching the program, the values will be the same as previously. However, at the bottom of the display there are now sliders that can be used to adjust these values to match the specifics of your car. Engine RPM is 1:100 scale, so to set a maximum RPM of 7000, set the slider to 70.00. Speed is 1:1 and works the same way. Boost is disabled by default (by setting it to 0 the gauge will hide) but simply slide the slider to match your wastegate pressure and the gauge will scale. For fuel, set the value to match fuel *capacity* not fuel *volume*.
+
+All sliders are set to truncate values after the decimal. There does not seem to be a way to force values to be integers in ControlP5; if you know of such a thing, please let me know.
 
 The defaults are for the base model D15.
-
-*TODO: Add a configuration system.*
 
 ----------
 
@@ -104,4 +111,15 @@ If you're running the program on a different computer, particularly over WiFi, t
 
 ### My car has more than 8 total gears, but I still only see 8!
 
-This is a limitation of OutGauge, it uses a single byte to represent gear, with only one 1 at a time. Because it has only 8 bits, only 8 gears can be represented, anything higher than F6 or lower than R1 will be represented by the highest/lowest light, as appropriate. **Again, I can't fix this.**
+This is a limitation of OutGauge, it uses a single byte to represent gear, with only one bit set at a time. Because it has only 8 bits, only 8 gears can be represented, anything higher than F6 or lower than R1 will be represented by the highest/lowest light, as appropriate. **Again, I can't fix this.**
+
+----------
+
+## Other notes:
+ 
+### I've discovered the lua file responsible for OutGauge support in BeamNG.
+
+BeamNG.drive > lua > vehicle > extensions > outgauge.lua
+
+It doesn't help me much now that I've done most of the work understanding the format but it could be useful in the future - there are a number of comments and TODOs listed in there.
+Many of the fields that I suspected were not working properly are now confirmed to simply not be implemented - *time*, *car*, *oil pressure* and others are simply set to 0.

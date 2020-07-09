@@ -1,3 +1,5 @@
+import controlP5.*;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -11,7 +13,9 @@ float radiustwo;
 float radiusthree;
 float fuelRadius;
 PShape signal;
-PImage im_tcs, im_abs, im_highbeam, im_parking;
+PImage im_tcs, im_abs, im_highbeam, im_parking, im_oil, im_battery;
+ControlP5 cp5;
+PFont font_default;
 
 //natural data
 int time;
@@ -38,17 +42,22 @@ float[] accel = new float[12];
 float aggregatedAccel = 0f;
 float[] consumption = new float[30];
 float aggregatedCons = 0f;
+float lphk = 0f;
+float lph = 0f;
+float range = 0f;
 
-/*CHANGE THESE*/
-final int MAX_RPM = 5800;
-final int MAX_SPEED = 190; //in km/h
+/*VARIABLE VALUES*/
+int MAX_RPM;
+int MAX_SPEED; //in km/h
+int MAX_BOOST; //in PSI
+int CAP_FUEL; //in litres
 
 void setup() {
   size(1280, 640);
   try {
     thread("getPacket");
   } catch (Exception e) {
-    println("Exception in setting up packet reception");
+    println("Failed to create network connection!");
     exit();
   }
   
@@ -65,6 +74,10 @@ void setup() {
   im_abs = loadImage("assets/abs.png");
   im_highbeam = loadImage("assets/high-beam.png");
   im_parking = loadImage("assets/parking.png");
+  im_oil = loadImage("assets/oil.png");
+  im_battery = loadImage("assets/battery.png");
+  
+  font_default = createFont("./assets/LiberationMono-Regular.ttf", 20);
 
   radius = min(width, height) / 2;
   radiusthree = radius * 0.72;
@@ -78,6 +91,94 @@ void setup() {
   rcx = lcx + cx;
   dy = cy*1.6;
   by = cy / 2;
+  
+  cp5 = new ControlP5(this);
+  
+  int s_rpm_min = 20;
+  int s_rpm_max = 120;
+  
+  int s_speed_min = 100;
+  int s_speed_max = 300;
+  
+  int s_boost_min = 0;
+  int s_boost_max = 50;
+  
+  int s_fuel_min = 1;
+  int s_fuel_max = 200;
+  
+  cp5.addSlider("RPM")
+   .setPosition(75, cy * 1.8)
+   .setSize(200, 15)
+   .setSliderMode(0)
+   .setRange(s_rpm_min, s_rpm_max)
+   .setValue(58);
+   
+  cp5.addSlider("SPEED")
+   .setPosition(75, cy * 1.8 + 20)
+   .setSize(200, 15)
+   .setSliderMode(0)
+   .setRange(s_speed_min, s_speed_max)
+   .setValue(210);
+   
+  cp5.addSlider("BOOST")
+   .setPosition(75, cy * 1.8 + 40)
+   .setSize(200, 15)
+   .setSliderMode(1)
+   .setRange(s_boost_min, s_boost_max)
+   .setValue(0);
+   
+  cp5.addSlider("FUEL")
+   .setPosition(width - (200 + 75), cy * 1.8 + 40)
+   .setSize(200, 15)
+   .setSliderMode(1)
+   .setRange(s_fuel_min, s_fuel_max)
+   .setValue(90);
+   
+  cp5.get("RPM").setCaptionLabel("MAX RPM");
+  cp5.get("SPEED").setCaptionLabel("MAX SPEED");
+  cp5.get("FUEL").setCaptionLabel("FUEL CAPACITY");
+  
+  cp5.addTextlabel("EFFICIENCY")
+    .setText("0 L/100 KM")
+    .setPosition(cx - 60, cy * 1.75)
+    .setColorValue(0xFF3FC8FF)
+    .setFont(font_default);
+    
+   cp5.addTextlabel("CONSUMPTION")
+    .setText("0 L/HOUR")
+    .setPosition(cx - 60, cy * 1.68)
+    .setColorValue(0xFF3FC8FF)
+    .setFont(font_default);
+    
+   cp5.addTextlabel("RANGE")
+    .setText("0 KM")
+    .setPosition(cx - 35, cy * 1.61)
+    .setColorValue(0xFF3FC8FF)
+    .setFont(font_default);
+    
+}
+
+void roundSliders() {
+  cp5.get("RPM").setValue((int) cp5.get("RPM").getValue());
+  cp5.get("SPEED").setValue((int) cp5.get("SPEED").getValue());
+  cp5.get("BOOST").setValue((int) cp5.get("BOOST").getValue());
+  cp5.get("FUEL").setValue((int) cp5.get("FUEL").getValue());
+}
+
+void RPM(float x) {
+  MAX_RPM = (int) (100 * x);
+}
+
+void SPEED(float x) {
+  MAX_SPEED = (int) x;
+}
+
+void BOOST(float x) {
+  MAX_BOOST = (int) x;
+}
+
+void FUEL(float x) {
+  CAP_FUEL = (int) x;
 }
 
 void draw() {  
@@ -91,6 +192,27 @@ void draw() {
   consumption = shift(consumption);
   consumption[consumption.length - 1] = fuel;
   aggregatedCons = 10000*aggregate(consumption)/consumption.length;
+  
+  // Litres per hundred kilometres
+  lphk = (aggregate(consumption) * (float) CAP_FUEL) / (speed / (60f * 60f * 60f));
+  
+  // Litres per hour
+  lph = (aggregate(consumption) * (float) CAP_FUEL) * 60f * 60f * 2f; 
+  
+  // Range based on consumption rate and amount remaining
+  range = (fuel * (float) CAP_FUEL) / lphk * 100f;
+  
+  /* the a_ variants are adjusted to account for negatives and huge values */
+  String a_lphk = (lphk < 1000) ? ((lphk > 0) ? Integer.toString((int) lphk) : "0") : "INF";
+  cp5.get("EFFICIENCY").setStringValue(a_lphk + " L/100 KM");
+  
+  String a_lph = (lph < 1000) ? ((lph > 0) ? Float.toString(round(lph * 10)/10f) : "0") : "INF";
+  cp5.get("CONSUMPTION").setStringValue(a_lph + " L/HOUR");
+  
+  String a_range = (range < 10000) ? ((range > 0) ? Float.toString((int) range) : "0") : "INF";
+  cp5.get("RANGE").setStringValue(a_range + " KM");
+  
+  roundSliders();
   
   /*VERTICAL INDICATOR START*/ //center
   for (float a = 0; a < 160; a += 20) {
@@ -179,7 +301,7 @@ void draw() {
   
   /*SMALL GAUGE START*/ //centre
   //boost pressure colour
-  if (boost > 2) { //high boost colour
+  if (boost > MAX_BOOST * 0.9) { //high boost colour
      stroke(255, 0, 0);
   }
   else if (boost < 0) { //vacuum
@@ -190,24 +312,39 @@ void draw() {
   }
   
   //boost pressure needle
-  strokeWeight(2);
-  float bp = map(boost, 0, 2.06, 0, 1); //boost is in bar
-  line(cx, by, cx + cos(bp*PI + PI) * radiusone/3, by + sin(bp*PI + PI) * radiusone/3);
+  if (MAX_BOOST > 0) { //hide if boost is marked unavailable
+    strokeWeight(1);
+    float bp = map(boost, 0, MAX_BOOST/14.5, 0, 1); //boost is in bar
+    line(cx, by, cx + cos(bp*PI + PI) * radiusone/3, by + sin(bp*PI + PI) * radiusone/3);
+    
+    //boost markers
+    for (float a = 180; a <= 405; a += 180f/(MAX_BOOST)) { //positive pressure
+      float angle = radians(a);
+      float x = cx + cos(angle) * ((radiusone/3f)+5);
+      float y = by + sin(angle) * ((radiusone/3f)+5);
+      float vx = cx + cos(angle) * ((radiusone/3f)+12);
+      float vy = by + sin(angle) * ((radiusone/3f)+12);
+      line(x, y, vx, vy);
+    }
+    for (float a = 180; a >= 135; a -= 180f/(MAX_BOOST)) { //negative pressure
+      float angle = radians(a);
+      float x = cx + cos(angle) * ((radiusone/3f)+5);
+      float y = by + sin(angle) * ((radiusone/3f)+5);
+      float vx = cx + cos(angle) * ((radiusone/3f)+12);
+      float vy = by + sin(angle) * ((radiusone/3f)+12);
+      line(x, y, vx, vy);
+    }
+    
+    //tach top and bottom markers
+    strokeWeight(2);
+    line(cx + ((int) cos(radians(180))) * ((radiusone/3f)+5), by + ((int) sin(radians(180))) * ((radiusone/3f)+5), cx + ((int) cos(radians(180))) * ((radiusone/3f)+20), by + ((int) sin(radians(180))) * ((radiusone/3f)+20));
+    line(cx + ((int) cos(radians(360))) * ((radiusone/3f)+5), by + ((int) sin(radians(360))) * ((radiusone/3f)+5), cx + ((int) cos(radians(360))) * ((radiusone/3f)+20), by + ((int) sin(radians(360))) * ((radiusone/3f)+20));
   
-  //oil temp markers
-  for (float a = 135; a <= 405; a += (45f/4f)) {
-    float angle = radians(a);
-    float x = cx + cos(angle) * ((radiusone/3)+5);
-    float y = by + sin(angle) * ((radiusone/3)+5);
-    float vx = cx + cos(angle) * ((radiusone/3)+12);
-    float vy = by + sin(angle) * ((radiusone/3)+12);
-    line(x, y, vx, vy);
+    //boost knob
+    fill(40);
+    noStroke();
+    ellipse(cx, by, 20, 20);
   }
-
-  //boost knob
-  fill(40);
-  noStroke();
-  ellipse(cx, by, 20, 20);
   /*SMALL GAUGE END*/
   
   /*LARGE GAUGE START*/ //left
@@ -343,16 +480,22 @@ void draw() {
     shape(signal, cx - 110, by/2, -35, 35); // <-
   }
   if ((showlights & 0x0002) != 0) { // highbeams
-    image(im_highbeam, cx - offset, dy + 40 - offset);
+    image(im_highbeam, cx - offset, cy - 70 - offset);
   }
   if ((showlights & 0x0010) != 0) { // traction control
     image(im_tcs, cx + 75 - offset, dy - 20 - offset);
   }
-  if ((showlights & 0x0400) != 0) { // antilock breaks
+  if ((showlights & 0x0400) != 0) { // antilock brakes
     image(im_abs, cx - 75 - offset, dy - 20 - offset);
   }
-  if ((showlights & 0x0004) != 0) { // handbreak breaks
+  if ((showlights & 0x0004) != 0) { // handbreak
     image(im_parking, cx - offset, dy - 20 - offset);
+  }
+  if ((showlights & 0x0100) != 0) { // oil pressure warning
+    image(im_oil, cx + 60 - offset, dy - 75 - offset);
+  }
+  if ((showlights & 0x0200) != 0) { // battery warning
+    image(im_battery, cx - 60 - offset, dy - 75 - offset);
   }
   /*SIGNAL END*/
 }
