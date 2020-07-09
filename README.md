@@ -56,6 +56,9 @@ You now have two options:
  11. Traction/Stability Control Activity
  12. High-beam
  13. Turn Signals
+ 14. Battery Warning
+ 15. Oil Warning
+ 16. Fuel Efficiency Data
 
 ----------
 
@@ -73,7 +76,10 @@ You now have two options:
  10. The *anti-lock braking system* will automatically feather the brakes under extreme conditions such as low grip braking or very hard braking to avoid wheel lockup. This light indicates the system is taking action to avoid lockup.
  11. The *traction control* or *stability control* systems use a combination of power reduction and individual-wheel-braking to try to keep a vehicle facing forward and under control. This light indicates one or more system is currently taking action to keep the vehicle under control.
  12. *High-beams* are bright headlights that point higher than standard headlights to illuminate a greater area ahead. Typically used on unlit roads, it's important that they have a dashboard warning as they are prone to blinding oncoming traffic.
- 13. *Turn signals* indicate intention to move laterally (turning, changing lane, parking, etc.). These will also both blink together if you have your hazard lights on.
+ 13. *Turn signals* are only functional in vehicles designed outside Germany.
+ 14. The *battery warning* should indicate an electrical issue. In BeamNG, it usually indicates the engine is not running.
+ 15. The *oil warning* indicates a problem with the engine's oil. In BeamNG this is an oil temperature warning.
+ 16. These 'meta-gauges' are the result of a bit of math and represent range, consumption rate, and consumption relative to distance travelled.
 
 ## Questions:
 
