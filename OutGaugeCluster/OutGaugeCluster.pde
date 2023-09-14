@@ -2,20 +2,12 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.nio.*;
+import java.time.*;
 
-char gearnames[] = {'R', 'N', '1', '2', '3', '4', '5', '6'};
-
-float cx, cy, lcx, rcx, by;
-float dy;
-int radius;
-float radiusone;
-float radiustwo;
-float radiusthree;
-float fuelRadius;
-
+char gearNames[] = {'R', 'N', '1', '2', '3', '4', '5', '6'};
 PFont labelFont;
 
-//natural data
+// natural data
 int time;
 char car[] = new char[4];
 int gear;
@@ -32,16 +24,18 @@ float throttle;
 float brake;
 float clutch;
 
+// derived data
+long dist = 0;
+
 void setup() {
-	size(1000, 400);
+	size(1000, 440);
 	try {
 		thread("getPacket");
 	} catch (Exception e) {
 		println("Failed to create network connection!");
 		exit();
 	}
-	
-	// font_default = createFont("./assets/LiberationMono-Regular.ttf", 20);
+
 	labelFont = createFont("./assets/BravePhoenixCompactItalic-gxYEq.otf", 72);
 }
 
@@ -55,6 +49,7 @@ void draw() {
 	int row1 = 120;
 	int row2 = row1 + 80;
 	int row3 = row2 + 80;
+	int row4 = row3 + 80;
 
 	textFont(labelFont);
 
@@ -62,11 +57,13 @@ void draw() {
 	text("KM/H: "  + Integer.toString((int) (speed * 3.6f)), col1, row2);
 
 	text("PSI: " + Float.toString(((int) (boost * 14.5f * 10)) / 10.0f), col3, row1);
-	text("GEAR: " + gearnames[gear], col3, row2);
+	text("GEAR: " + gearNames[gear], col3, row2);
 
 	text(Float.toString(((int) (fuel * 1000)) / 10.0f) + '%', col1, row3);
 	text(Float.toString(((int) (engTemp * 10)) / 10.0f) + " °C", col2, row3);
 	text(Float.toString(((int) (oilTemp * 10)) / 10.0f) + " °C", 660, row3);
+
+	text(Float.toString(((long) (dist / 10000)) / 100.0f) + " KM", col1, row4);
 }
 
 void getPacket() throws IOException{
@@ -74,6 +71,9 @@ void getPacket() throws IOException{
 	DatagramSocket socket = new DatagramSocket(5555);
 	byte[] buf = new byte[64];
 	DatagramPacket packet = new DatagramPacket(buf, buf.length);
+
+	Instant last = Instant.now();
+
 	while (true) {
 		socket.receive(packet);
 		byte[] data = packet.getData();
@@ -89,5 +89,15 @@ void getPacket() throws IOException{
 		oilTemp = ByteBuffer.wrap(new byte[]{data[36], data[37], data[38], data[39]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
 		showlights = ByteBuffer.wrap(new byte[]{data[44], data[45], data[46], data[47]}).order(ByteOrder.LITTLE_ENDIAN).getInt();
 		//clutch = ByteBuffer.wrap(new byte[]{data[64], data[65], data[66], data[67]}).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+
+		Instant now = Instant.now();
+		dist += (long) (speed * (double) Duration.between(last, now).toMillis());
+		last = now;
+	}
+}
+
+void keyPressed() {
+	if (key == 'r' || key == 'R') { // reset distance travelled
+		dist = 0;
 	}
 }
