@@ -97,7 +97,21 @@ void getPacket() throws IOException{
 }
 
 void keyPressed() {
-	if (key == 'r' || key == 'R') { // reset distance travelled
-		dist = 0;
-	}
+  switch (key) {
+    case 'r':
+    case 'R':
+      dist = 0; // reset distance travelled
+      break;
+    case '+':
+    case '=':
+      dist += 100000;
+      break;
+    case '-':
+    case '_':
+      if (dist < 100000) dist = 0;
+      else dist -= 100000;
+      break;
+    default:
+      break;
+  }
 }
